@@ -1,0 +1,9 @@
+### AL ###
+#Template for AL projects for Dynamics 365 Business Central
+#launch.json folder
+.vscode/
+#pycach 
+__pycache__/
+
+# data 
+dataAll/ds000109-2.0.2/
