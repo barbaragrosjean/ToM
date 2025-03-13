@@ -1,20 +1,26 @@
 clear; clc;
 
+addpath('/Users/barbaragrosjean/Documents/MATLAB/spm12')
+spm('Defaults','fMRI');
+
 % Define paths
-dataPath = '/Users/sysadmin/Documents/GorgolewskiDataSet/ds000109-download/';
+dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/';
 groupOutputPath = fullfile(dataPath, 'GroupDCM_Test'); % Output directory
 
-% List of subjects (from your provided list)
-subjects = {'sub-01', 'sub-02', 'sub-03', 'sub-05', 'sub-07', 'sub-08', 'sub-09', ...
-            'sub-11',  'sub-15', 'sub-17', 'sub-18', 'sub-19', ...
-            'sub-21', 'sub-22', 'sub-23', 'sub-25', 'sub-26', 'sub-27', 'sub-28', ...
-            'sub-29', 'sub-30', 'sub-31', 'sub-32', 'sub-34', 'sub-36',  ...
-            'sub-39', 'sub-42', 'sub-43', 'sub-46', 'sub-48', 'sub-49'};
+% List of subjects 
+subjects = {'sub-01', 'sub-02'} ;
+
+%, 'sub-03', 'sub-05', 'sub-07', 'sub-08', 'sub-09', ...
+%            'sub-11',  'sub-15', 'sub-17', 'sub-18', 'sub-19', ...
+%            'sub-21', 'sub-22', 'sub-23', 'sub-25', 'sub-26', 'sub-27', 'sub-28', ...
+%            'sub-29', 'sub-30', 'sub-31', 'sub-32', 'sub-34', 'sub-36',  ...
+%            'sub-39', 'sub-42', 'sub-43', 'sub-46', 'sub-48', 'sub-49'};
 
 %skip 'sub-14',
 % also sub-5, 'sub-10'
 %skip 4 ROIS 38, 40, 47
 % sub-29 problematic for session 2, different events/onsets etc.
+
 % Define number of models
 numModels = 10;
 modelNames = arrayfun(@(x) sprintf('model%d.mat', x), 1:numModels, 'UniformOutput', false);

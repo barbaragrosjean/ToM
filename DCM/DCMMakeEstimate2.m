@@ -1,16 +1,22 @@
 clear; clc;
 
+% 2 Estimate DCM 
+addpath('/Users/barbaragrosjean/Documents/MATLAB/spm12')
+spm('Defaults','fMRI');
+
 % Paths
-dataPath = '/Users/sysadmin/Documents/GorgolewskiDataSet/ds000109-download/';
-voiPath = '/Users/sysadmin/Documents/GorgolewskiDataSet/ROIs/';
-roiNamesF = {'CerebellumLobVII', 'PrecuneusR', 'STGR', 'IFGOpR', 'MFGR_dlPFCmPFC'};
-roiNamesR = {'PrecuneusR', 'STGR', 'IFGOpR', 'MFGR_dlPFCmPFC'};
+dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
+voiPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ROIs_mask';
+
+%roiNamesF = {'CerebellumLobVII', 'PrecuneusR', 'STGR', 'IFGOpR', 'MFGR_dlPFCmPFC'};
+roiNamesR = {'PrecuneusL', 'STGL', 'IFGOpL', 'MFGL_dlPFCmPFC'};
 
 % Subjects
 cd(dataPath);
 allSubs = dir('sub-*');
-allSubs(32) = []; % Exclude a specific subject
-allSubs(4) = []; % Exclude a specific subject
+%allSubs(32) = []; % Exclude a specific subject
+allSubs(2) = [];
+
 subPaths = cellfun(@(x) fullfile(dataPath, x, 'func', 'ResultsModel1FB'), {allSubs.name}, 'UniformOutput', false);
 
 % Models: Define as connectivity matrices
@@ -74,16 +80,36 @@ modelsR = {
      0 0 0 1; 
      0 0 0 1];  % Model 10
 };
+%% DCM template file
+DCM = struct();
+% Define regions of interest (ROIs)
+DCM.xY.Dfile = dataPath; 
+DCM.xY.name = roiNamesR;
+DCM.xY.Ic = [1 2 3 4];  % Indices of ROIs
 
-% Generate DCM Template (if it doesn't already exist)
-templateFileF = '/Users/sysadmin/Documents/GorgolewskiDataSet/ds000109-download/sub-01/func/ResultsModel1FB/DCM_template.mat';
-templateFileR = '/Users/sysadmin/Documents/GorgolewskiDataSet/ds000109-download/sub-01/func/ResultsModel1FB/DCM_templateR.mat';
+% Define experimental inputs
+DCM.U.dt = 2;  % Repetition time (TR)
+DCM.U.name = {'FB Story Ons', 'CTRL Story Ons', 'FB Resp Ons', 'CTRL Resp Ons'};  
+DCM.U.u = zeros(100,1); 
+
+% Define connectivity matrices
+nROIs = length(DCM.xY.Ic);
+DCM.n = 4;
+DCM.v = 0; 
+DCM.a = ones(nROIs, nROIs);  
+DCM.b = zeros(nROIs, nROIs, 1);  
+DCM.c = zeros(nROIs, 4);  
+% Save DCM file
+save('DCM_TemplateR.mat', 'DCM');
+%%
+%templateFileF = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/sub-01/func/ResultsModel1FB/DCM_template.mat';
+templateFileR = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/sub-01/func/ResultsModel1FB/DCM_templateR.mat';
 
 % Preallocate storage for results
 BatchStorage = cell(length(subPaths), 1);
 
 % Loop through subjects and sessions
-for s = 32:length(subPaths)
+for s = 1 %32:length(subPaths)
     spm('defaults', 'FMRI');
     spm_jobman('initcfg'); % Initialize SPM job manager
     thisPath = subPaths{s};
@@ -95,22 +121,17 @@ for s = 32:length(subPaths)
     numSessions = length(SPM.Sess); % Number of sessions
 
     for sess = 1:numSessions
-        if isfile(['VOI_CerebellumLobVII_',num2str(sess), '_', num2str(sess),'.mat'])
-            models = modelsF;
-            roiNames = roiNamesF;
-            templateFile = templateFileF;
-        else 
-            models = modelsR;
-            roiNames = roiNamesR;
-            templateFile = templateFileR;
-        end
+        models = modelsR;
+        roiNames = roiNamesR;
+        templateFile = templateFileR;
+
         for m = 1:length(models)
             modelA = models{m};
             numROIs = size(modelA, 1);
 
             % Initialize DCM structure
-            templateData = load(templateFile); % Load DCM template
-            DCM = templateData.DCM; % Extract DCM struct
+            templateData = load(templateFile);
+            DCM = templateData.DCM; 
             DCM.n = numROIs;
             DCM.v = SPM.nscan(sess); % Number of scans
             DCM.Y.dt = TR; % TR
@@ -126,7 +147,7 @@ for s = 32:length(subPaths)
                 end
                 voiData = load(voiFile, 'xY'); % Load VOI data into struct
                 xY = voiData.xY; % Extract xY explicitly
- 
+                
                 DCM.xY(i).name = xY.name;
                 DCM.xY(i).Ic = xY.Ic;
                 DCM.xY(i).Sess = xY.Sess;
@@ -156,12 +177,13 @@ for s = 32:length(subPaths)
                 DCM.U.name = {'null'};
             end
 
+            % mine
+            disp(DCM.U(1).name)
+            disp(DCM.U(2).name)
+
             % Save DCM file
             dcmFile = fullfile(thisPath, sprintf('DCM_%s_sess%d_model%d.mat', sub, sess, m));
             save(sprintf(dcmFile, s),"-fromstruct",DCM);
-            % save(dcmFile, 'DCM');
-        
-
 
             % Specify batch for DCM
             matlabbatch = {};
@@ -210,8 +232,6 @@ for s = 32:length(subPaths)
             matlabbatch{4}.spm.dcm.estimate.output.single.name = sprintf('GCM_sub%s_sess%d_model%d', sub, sess, m);
             matlabbatch{4}.spm.dcm.estimate.est_type = 2;
             matlabbatch{4}.spm.dcm.estimate.fmri.analysis = 'time';
-
-
             
             % Run the batch
             try

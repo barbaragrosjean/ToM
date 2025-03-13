@@ -1,5 +1,8 @@
 clear; clc;
 
+% STEP 1 - Extract VOIs
+% Run with Leyla masks, subj 1 bc preproc and reg to MNI
+
 % Download rois
 roiPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ROIs_mask';
 cd(roiPath)
@@ -12,16 +15,6 @@ for r = 1:length(rois)
    [pathstr,name,ext] = fileparts(fullfile(roiPath,rois(r).name));
     roiNames{r} = name;
 end
-
-% Download rois Leyla
-%roiPath = '/Users/sysadmin/Documents/GorgolewskiDataSet/ROIs/';
-%cd(roiPath)
-%roiNames = {'CerebellumLobVII', 'IFGOpL', 'IFGOpR', 'MFGL_dlPFCmPFC', 'MFGR_dlPFCmPFC', 'PrecuneusL', 'PrecuneusR', 'STGL', 'STGR', 'TemporalPoleL','TemporalPoleR'};
-%rois = dir('*.nii');
-%roi = [];
-%for r = 1:length(rois)
-%    roi{r} = fullfile(roiPath,rois(r).name);
-%end
 
 % Download data
 dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
@@ -36,6 +29,7 @@ for s = 1:length(allSubs)
         subPaths{s} = fullfile(dataPath, allSubs(s).name);
 end
 
+
 %% Start SPM 
 % Add spm path
 addpath('/Users/barbaragrosjean/Documents/MATLAB/spm12')
@@ -44,6 +38,7 @@ spm_jobman('initcfg');
 
 % Initialize batch counter
 batchCounter = 0;
+
 %-----------------------------------------------------------------------
 % Job saved on 13-Jan-2025 12:51:52 by cfg_util (rev $Rev: 7345 $)
 % spm SPM - SPM12 (7771)
@@ -58,15 +53,15 @@ for s = 1
     lSess = length(SPM.Sess);
     %clear SPM
 
-    for j = 1%:lSess % session 
-        for i = 1 % ROIs
+    for j = 1:lSess % session 
+        for i = 1:length(rois) % ROIs
             batchCounter = batchCounter + 1; % Increment batch counter
             matlabbatch{batchCounter}.spm.util.voi.spmmat = {fullfile(thisPath, 'SPM.mat')};
-            matlabbatch{batchCounter}.spm.util.voi.adjust = 5; % layla used 4
+            matlabbatch{batchCounter}.spm.util.voi.adjust = 5; % leyla used 4
             matlabbatch{batchCounter}.spm.util.voi.session = j;
             matlabbatch{batchCounter}.spm.util.voi.name = [roiNames{i}, '_', num2str(j)];
             matlabbatch{batchCounter}.spm.util.voi.roi{1}.mask.image = roi(i);
-            matlabbatch{batchCounter}.spm.util.voi.roi{1}.mask.threshold = 0.5; 
+            matlabbatch{batchCounter}.spm.util.voi.roi{1}.mask.threshold = 0.5 ; % 0.5 leyla
             matlabbatch{batchCounter}.spm.util.voi.expression = 'i1';
         end
     end
