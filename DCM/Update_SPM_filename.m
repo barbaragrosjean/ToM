@@ -5,7 +5,7 @@
 your_absolute_path_to_the_data_folder = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
 
 % List the directories in the SPM_data folder
-spm_data_folder = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/SPM_data';
+spm_data_folder = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
 dir_info = dir(spm_data_folder);
 list_dir = {};
 
@@ -14,6 +14,7 @@ for i = 1:length(dir_info)
         list_dir{end+1} = dir_info(i).name; 
     end
 end
+
 
 % Loop over subject directories
 for i = 1:length(list_dir)

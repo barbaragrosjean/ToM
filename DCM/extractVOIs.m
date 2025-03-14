@@ -22,7 +22,6 @@ subPaths = [];
 cd(dataPath)
 allSubs = dir('sub-*');
 %allSubs(32) = [];
-allSubs(2) = [];
 
 % SPM.map files path
 for s = 1:length(allSubs)
@@ -44,8 +43,7 @@ batchCounter = 0;
 % spm SPM - SPM12 (7771)
 % cfg_basicio BasicIO - Unknown
 %-----------------------------------------------------------------------
-%for s = 1:length(subPaths)
-for s = 1
+for s = 1:length(subPaths)
     thisPath= subPaths{s};
     cd(thisPath)
     load SPM.mat 

@@ -6,7 +6,6 @@ spm('Defaults','fMRI');
 
 % Paths
 dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
-voiPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ROIs_mask';
 
 %roiNamesF = {'CerebellumLobVII', 'PrecuneusR', 'STGR', 'IFGOpR', 'MFGR_dlPFCmPFC'};
 roiNamesR = {'PrecuneusL', 'STGL', 'IFGOpL', 'MFGL_dlPFCmPFC'};
@@ -15,7 +14,6 @@ roiNamesR = {'PrecuneusL', 'STGL', 'IFGOpL', 'MFGL_dlPFCmPFC'};
 cd(dataPath);
 allSubs = dir('sub-*');
 %allSubs(32) = []; % Exclude a specific subject
-allSubs(2) = [];
 
 subPaths = cellfun(@(x) fullfile(dataPath, x, 'func', 'ResultsModel1FB'), {allSubs.name}, 'UniformOutput', false);
 
@@ -41,7 +39,7 @@ modelsR = {
      0 1 1 1];  % Model 2
     
     [1 0 1 1; 
-     1 0 1 1; 
+     1 0 1 1;
      0 0 0 0; 
      1 0 1 1];  % Model 3
     
@@ -80,28 +78,7 @@ modelsR = {
      0 0 0 1; 
      0 0 0 1];  % Model 10
 };
-%% DCM template file
-DCM = struct();
-% Define regions of interest (ROIs)
-DCM.xY.Dfile = dataPath; 
-DCM.xY.name = roiNamesR;
-DCM.xY.Ic = [1 2 3 4];  % Indices of ROIs
 
-% Define experimental inputs
-DCM.U.dt = 2;  % Repetition time (TR)
-DCM.U.name = {'FB Story Ons', 'CTRL Story Ons', 'FB Resp Ons', 'CTRL Resp Ons'};  
-DCM.U.u = zeros(100,1); 
-
-% Define connectivity matrices
-nROIs = length(DCM.xY.Ic);
-DCM.n = 4;
-DCM.v = 0; 
-DCM.a = ones(nROIs, nROIs);  
-DCM.b = zeros(nROIs, nROIs, 1);  
-DCM.c = zeros(nROIs, 4);  
-% Save DCM file
-save('DCM_TemplateR.mat', 'DCM');
-%%
 %templateFileF = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/sub-01/func/ResultsModel1FB/DCM_template.mat';
 templateFileR = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/sub-01/func/ResultsModel1FB/DCM_templateR.mat';
 
@@ -138,7 +115,7 @@ for s = 1 %32:length(subPaths)
             DCM.b(:,:,1) = modelA; % Use model-specific connectivity
             DCM.b(:,:,2) = modelA;
 
-            % Assign VOIs to DCM.xY
+            % Assign spm_dcm_voi VOIs to DCM.xY
             DCM.xY = struct([]);
             for i = 1:numROIs
                 voiFile = fullfile(thisPath, sprintf('VOI_%s_%d_%d.mat', roiNames{i}, sess, sess));
@@ -147,7 +124,7 @@ for s = 1 %32:length(subPaths)
                 end
                 voiData = load(voiFile, 'xY'); % Load VOI data into struct
                 xY = voiData.xY; % Extract xY explicitly
-                
+
                 DCM.xY(i).name = xY.name;
                 DCM.xY(i).Ic = xY.Ic;
                 DCM.xY(i).Sess = xY.Sess;
@@ -175,11 +152,7 @@ for s = 1 %32:length(subPaths)
             else
                 DCM.U.u = zeros(DCM.v, 1);
                 DCM.U.name = {'null'};
-            end
-
-            % mine
-            disp(DCM.U(1).name)
-            disp(DCM.U(2).name)
+            end     
 
             % Save DCM file
             dcmFile = fullfile(thisPath, sprintf('DCM_%s_sess%d_model%d.mat', sub, sess, m));
@@ -200,6 +173,7 @@ for s = 1 %32:length(subPaths)
                 roiIndex = i;
                 voiFile = fullfile(thisPath, sprintf('VOI_%s_%d_%d.mat', roiNames{i}, sess, sess));
                 voiFiles{i} = voiFile;
+
              end
             % matlabbatch{1}.spm.dcm.spec.fmri.group.data.region = {voiFiles};
             matlabbatch{1}.spm.dcm.spec.fmri.group.data.region = cell(numROIs, 1);
@@ -212,9 +186,13 @@ for s = 1 %32:length(subPaths)
             end
 
             dcmMat = ['DCM_',sub, '_sess',num2str(sess),'_model', num2str(m), '.mat'];
+
             dcmMatFile = fullfile(thisPath,dcmMat);
             matlabbatch{2}.spm.dcm.spec.fmri.regions.dcmmat = {dcmMatFile};
+            disp(dcmMatFile)
+            
             matlabbatch{2}.spm.dcm.spec.fmri.regions.voimat = voiFiles;
+
             %matlabbatch{3}.spm.dcm.spec.fmri.inputs.dcmmat(1) = cfg_dep('Region specification: DCM mat File(s)', substruct('.','val', '{}',{2}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','dcmmat'));
             matlabbatch{3}.spm.dcm.spec.fmri.inputs.dcmmat = {fullfile(thisPath,['DCM_',sub, '_sess',num2str(sess),'_model', num2str(m), '.mat'])};
             matlabbatch{3}.spm.dcm.spec.fmri.inputs.spmmat = {fullfile(thisPath, 'SPM.mat')};
