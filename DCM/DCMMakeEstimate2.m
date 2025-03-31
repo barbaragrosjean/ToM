@@ -2,7 +2,6 @@ clear; clc;
 
 % 2 Estimate DCM 
 addpath('/Users/barbaragrosjean/Documents/MATLAB/spm12')
-spm('Defaults','fMRI');
 
 % Paths
 dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
@@ -86,33 +85,39 @@ templateFileR = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/
 BatchStorage = cell(length(subPaths), 1);
 
 % Loop through subjects and sessions
-for s = 1 %32:length(subPaths)
+for s = 1:length(subPaths)
     spm('defaults', 'FMRI');
     spm_jobman('initcfg'); % Initialize SPM job manager
     thisPath = subPaths{s};
+
+    % init subj name
     sub = allSubs(s).name;
     cd(thisPath);
-    spmData = load(fullfile(thisPath, 'SPM.mat')); % Load into struct
-    SPM = spmData.SPM; % Extract SPM
-    TR = SPM.xY.RT; % Extract TR
-    numSessions = length(SPM.Sess); % Number of sessions
+    
+    % Load SPM data
+    spmData = load(fullfile(thisPath, 'SPM.mat'));
+    SPM = spmData.SPM; 
+    TR = SPM.xY.RT; 
+    numSessions = length(SPM.Sess); 
+    
 
-    for sess = 1:numSessions
-        models = modelsR;
-        roiNames = roiNamesR;
-        templateFile = templateFileR;
+    for sess = 1:numSessions 
+        models = modelsR; 
+        roiNames = roiNamesR; 
+        templateFile = templateFileR; 
 
-        for m = 1:length(models)
-            modelA = models{m};
+        for m = 1:length(models) % test several models of interaction
+            modelA = models{m}; 
             numROIs = size(modelA, 1);
 
             % Initialize DCM structure
             templateData = load(templateFile);
             DCM = templateData.DCM; 
-            DCM.n = numROIs;
-            DCM.v = SPM.nscan(sess); % Number of scans
-            DCM.Y.dt = TR; % TR
-            DCM.b(:,:,1) = modelA; % Use model-specific connectivity
+            DCM.n = numROIs; 
+            DCM.v = SPM.nscan(sess); 
+            DCM.Y.dt = TR; 
+
+            DCM.b(:,:,1) = modelA; 
             DCM.b(:,:,2) = modelA;
 
             % Assign spm_dcm_voi VOIs to DCM.xY
@@ -124,7 +129,7 @@ for s = 1 %32:length(subPaths)
                 end
                 voiData = load(voiFile, 'xY'); % Load VOI data into struct
                 xY = voiData.xY; % Extract xY explicitly
-
+                
                 DCM.xY(i).name = xY.name;
                 DCM.xY(i).Ic = xY.Ic;
                 DCM.xY(i).Sess = xY.Sess;
@@ -144,8 +149,9 @@ for s = 1 %32:length(subPaths)
             if ~isempty(SPM.Sess(sess).U)
                 DCM.U.u = [];
                 if length(SPM.Sess(sess).U) >= 4 % Ensure at least 4 conditions exist
-                    DCM.U.u = [SPM.Sess(sess).U(3).u, SPM.Sess(sess).U(4).u]; % Only last two conditions
-                    DCM.U.name = {SPM.Sess(sess).U(3).name, SPM.Sess(sess).U(4).name};
+                    % new
+                    DCM.U.u = [SPM.Sess(sess).U(1).u, SPM.Sess(sess).U(2).u, SPM.Sess(sess).U(3).u, SPM.Sess(sess).U(4).u]; 
+                    DCM.U.name = {SPM.Sess(sess).U(1).name, SPM.Sess(sess).U(2).name, SPM.Sess(sess).U(3).name, SPM.Sess(sess).U(4).name};
                 else
                     error('Not enough conditions in SPM.Sess(sess).U.');
                 end
@@ -173,42 +179,47 @@ for s = 1 %32:length(subPaths)
                 roiIndex = i;
                 voiFile = fullfile(thisPath, sprintf('VOI_%s_%d_%d.mat', roiNames{i}, sess, sess));
                 voiFiles{i} = voiFile;
-
              end
-            % matlabbatch{1}.spm.dcm.spec.fmri.group.data.region = {voiFiles};
+            
+            matlabbatch{1}.spm.dcm.spec.fmri.group.data.region = voiFiles;
             matlabbatch{1}.spm.dcm.spec.fmri.group.data.region = cell(numROIs, 1);
+
             for i = 1:numROIs
                 voiFile = fullfile(thisPath, sprintf('VOI_%s_%d_%d.mat', roiNames{i}, sess, sess));
+
                 if ~isfile(voiFile)
                     error('Missing VOI file for region %s: %s\n', roiNames{i}, voiFile);
                 end
                 matlabbatch{1}.spm.dcm.spec.fmri.group.data.region{i} = {voiFile};
             end
 
+            % Specify SPM and DCM 
             dcmMat = ['DCM_',sub, '_sess',num2str(sess),'_model', num2str(m), '.mat'];
-
             dcmMatFile = fullfile(thisPath,dcmMat);
-            matlabbatch{2}.spm.dcm.spec.fmri.regions.dcmmat = {dcmMatFile};
-            disp(dcmMatFile)
-            
+            spmMatFile = fullfile(thisPath, 'SPM.mat');
+            matlabbatch{2}.spm.dcm.spec.fmri.regions.dcmmat ={dcmMatFile};            
             matlabbatch{2}.spm.dcm.spec.fmri.regions.voimat = voiFiles;
-
-            %matlabbatch{3}.spm.dcm.spec.fmri.inputs.dcmmat(1) = cfg_dep('Region specification: DCM mat File(s)', substruct('.','val', '{}',{2}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), substruct('.','dcmmat'));
-            matlabbatch{3}.spm.dcm.spec.fmri.inputs.dcmmat = {fullfile(thisPath,['DCM_',sub, '_sess',num2str(sess),'_model', num2str(m), '.mat'])};
-            matlabbatch{3}.spm.dcm.spec.fmri.inputs.spmmat = {fullfile(thisPath, 'SPM.mat')};
+            matlabbatch{3}.spm.dcm.spec.fmri.inputs.dcmmat = {dcmMatFile};
+            matlabbatch{3}.spm.dcm.spec.fmri.inputs.spmmat = {spmMatFile};
             matlabbatch{3}.spm.dcm.spec.fmri.inputs.session = sess;
-            matlabbatch{3}.spm.dcm.spec.fmri.inputs.val = {
-                                               1
-                                               1
-                                               }';
+            %matlabbatch{3}.spm.dcm.spec.fmri.inputs.val = {1 2 3 4};
+
+            % Initialize the batch for DCM specification
+            matlabbatch{3}.spm.dcm.spec.fmri.inputs.val = cell(2, 1);
             
+            % Condition 3 (onsets and durations)
+            matlabbatch{3}.spm.dcm.spec.fmri.inputs.val{1} = SPM.Sess.U(3).ons;  % Onsets of Condition 3
+            matlabbatch{3}.spm.dcm.spec.fmri.inputs.val{2} = SPM.Sess.U(4).ons;  % Onsets of Condition 4
+                                   
+                                              
             % Specify estimation step
-            matlabbatch{4}.spm.dcm.estimate.dcms.gcmmat(1) = cfg_dep('Specify group: GCM mat File(s)', ...
-                substruct('.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1}), ...
-                substruct('.','gcmmat'));
+            matlabbatch{4}.spm.dcm.estimate.dcms.gcmmat = cfg_dep('Specify group: GCM mat File(s)', ...
+                substruct('.','val', '{}',{1}), substruct('.','gcmmat'));
+
+            % Specify output 
             matlabbatch{4}.spm.dcm.estimate.output.single.dir = {thisPath};
             matlabbatch{4}.spm.dcm.estimate.output.single.name = sprintf('GCM_sub%s_sess%d_model%d', sub, sess, m);
-            matlabbatch{4}.spm.dcm.estimate.est_type = 2;
+            matlabbatch{4}.spm.dcm.estimate.est_type = 2; % type of DCM Estimation
             matlabbatch{4}.spm.dcm.estimate.fmri.analysis = 'time';
             
             % Run the batch

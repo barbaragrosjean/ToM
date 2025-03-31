@@ -21,7 +21,6 @@ dataPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2';
 subPaths = [];
 cd(dataPath)
 allSubs = dir('sub-*');
-%allSubs(32) = [];
 
 % SPM.map files path
 for s = 1:length(allSubs)
@@ -55,7 +54,7 @@ for s = 1:length(subPaths)
         for i = 1:length(rois) % ROIs
             batchCounter = batchCounter + 1; % Increment batch counter
             matlabbatch{batchCounter}.spm.util.voi.spmmat = {fullfile(thisPath, 'SPM.mat')};
-            matlabbatch{batchCounter}.spm.util.voi.adjust = 5; % leyla used 4
+            matlabbatch{batchCounter}.spm.util.voi.adjust = 4; 
             matlabbatch{batchCounter}.spm.util.voi.session = j;
             matlabbatch{batchCounter}.spm.util.voi.name = [roiNames{i}, '_', num2str(j)];
             matlabbatch{batchCounter}.spm.util.voi.roi{1}.mask.image = roi(i);

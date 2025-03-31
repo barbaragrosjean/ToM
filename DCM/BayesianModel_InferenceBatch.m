@@ -105,8 +105,6 @@ spm_jobman('initcfg');
 spm_jobman('run', matlabbatch);
 
 
-
-
 GCM = {}; % Initialize empty cell array
 sess_idx = 0;
 
