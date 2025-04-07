@@ -30,7 +30,11 @@ BatchStorage = cell(length(subPaths), 1);
 
 % Models
 nbmodels = 10;
- 
+
+% Sess 
+numSessions = 2;
+
+%%  ==== Estimate ====
 for s= 2 %:length(subPaths)  
     % Set subj path
     thisPath = subPaths{s};
@@ -106,7 +110,10 @@ for s= 2 %:length(subPaths)
         end
     end
 end 
-%%
+
+% To explore the output and the model in DCM matric once its extimate: spm_dcm_review(DCM_estimate.DCM)
+% spm_dcm_fmri_check(DCM_estimate.DCM)
+%% ==== Group in GCM ==== 
 
 groupPath = '/Users/barbaragrosjean/Desktop/CHUV/ToM/dataAll/ds000109-2.0.2/group';
 
@@ -123,10 +130,8 @@ for sess = 1:numSessions
         end
     end
     save(fullfile(groupPath, sprintf('GCM_full_sess%d.mat', sess)), 'GCM'); % Save group model set
-
+    if sess == 1 
+        spm_dcm_fmri_check(GCM);
+    end 
 end 
 
-save(fullfile(groupPath, 'GCM_full.mat'), 'GCM'); % Save group model set
-
-
-spm_dcm_fmri_check(GCM);

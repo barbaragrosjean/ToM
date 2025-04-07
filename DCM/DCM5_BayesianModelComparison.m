@@ -5,6 +5,8 @@
 % which differ in terms of which connectivity parameters or covariates are included.
 
 clear; clc;
+addpath('/Users/barbaragrosjean/Documents/MATLAB/spm12')
+
 spm('defaults', 'FMRI');
 spm_jobman('initcfg');
 
